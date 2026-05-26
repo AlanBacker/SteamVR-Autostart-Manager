@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+build/
+dist/
+installer_output/
+*.spec
+assets/app_icon.ico
