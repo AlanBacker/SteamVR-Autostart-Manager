@@ -25,6 +25,7 @@ else:  # pragma: no cover - the target is Windows, but keeping imports safe help
 
 
 APP_TITLE = "SteamVR 自启动管理器"
+VERSION = "v1.0"
 APP_VENDOR_DIR = "SteamVRManifestManager"
 DEFAULT_STEAM_PATHS = (
     r"C:\Program Files (x86)\Steam",
@@ -1799,7 +1800,7 @@ class SteamVRManagerApp(tk.Tk):
         )
 
     def _build(self) -> None:
-        self.title(self._t("app_title"))
+        self.title(f"{self._t('app_title')} {VERSION}")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(2, weight=1)
 
@@ -1810,7 +1811,7 @@ class SteamVRManagerApp(tk.Tk):
 
         title_wrap = tk.Frame(header, bg=COLORS["header"])
         title_wrap.grid(row=0, column=0, sticky="w", padx=24, pady=(20, 8))
-        ttk.Label(title_wrap, text=self._t("app_title"), style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(title_wrap, text=f"{self._t('app_title')} {VERSION}", style="Title.TLabel").grid(row=0, column=0, sticky="w")
         ttk.Label(title_wrap, text=self._t("app_subtitle"), style="Subtitle.TLabel").grid(row=1, column=0, sticky="w", pady=(4, 0))
 
         lang_wrap = tk.Frame(header, bg=COLORS["header"])
