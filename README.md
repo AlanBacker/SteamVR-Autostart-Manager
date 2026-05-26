@@ -99,3 +99,7 @@ When adding a program, the tool generates a manifest under `%LOCALAPPDATA%\Steam
 ```
 
 It is recommended to modify configurations when SteamVR is closed, and then restart SteamVR to see the changes.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
