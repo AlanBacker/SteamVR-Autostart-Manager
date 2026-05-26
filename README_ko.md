@@ -2,6 +2,10 @@
 
 [English](README.md) | [简体中文](README_zh.md) | [日本語](README_ja.md) | [한국어]
 
+🏪 **Booth 링크:** [https://alanbacker.booth.pm/items/8416676](https://alanbacker.booth.pm/items/8416676)
+
+![스크린샷](assets/kr.png)
+
 SteamVR의 `.vrmanifest` 등록 및 자동 시작 스위치를 보다 직관적으로 관리할 수 있는 Windows 데스크톱 GUI 애플리케이션입니다.
 
 ## 기능
@@ -99,6 +103,11 @@ SteamVR/OpenVR은 매니페스트 추가, 매니페스트 제거, 자동 시작 
 ```
 
 설정을 수정할 때는 SteamVR을 종료한 상태에서 수행하는 것을 권장하며, 그 후 SteamVR을 다시 시작하여 효과를 확인해 주십시오.
+
+## 후원 안내
+
+개발자를 후원하고자 하신다면 Booth 상품 페이지에서 'Support Me :3' 옵션을 선택하여 구매해 주세요. 감사합니다!
+[https://alanbacker.booth.pm/items/8416676](https://alanbacker.booth.pm/items/8416676)
 
 ## 라이선스
 

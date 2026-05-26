@@ -2,6 +2,10 @@
 
 [English] | [简体中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md)
 
+🏪 **Booth Link:** [https://alanbacker.booth.pm/items/8416676](https://alanbacker.booth.pm/items/8416676)
+
+![Screenshot](assets/en.png)
+
 A Windows desktop GUI application to manage SteamVR `.vrmanifest` registration and autostart toggles more intuitively.
 
 ## Features
@@ -99,6 +103,11 @@ When adding a program, the tool generates a manifest under `%LOCALAPPDATA%\Steam
 ```
 
 It is recommended to modify configurations when SteamVR is closed, and then restart SteamVR to see the changes.
+
+## Support
+
+If you want to support the developer, please consider purchasing the "Support Me :3" option on our Booth page:
+[https://alanbacker.booth.pm/items/8416676](https://alanbacker.booth.pm/items/8416676)
 
 ## License
 
