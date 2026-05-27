@@ -6,6 +6,7 @@ import locale
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -25,8 +26,12 @@ else:  # pragma: no cover - the target is Windows, but keeping imports safe help
 
 
 APP_TITLE = "SteamVR 自启动管理器"
-VERSION = "v1.0"
+VERSION = "v1.0.1"
 APP_VENDOR_DIR = "SteamVRManifestManager"
+LAUNCHER_ARGUMENT = "--steamvr-autostart-launch"
+LAUNCH_CONFIG_NAME = "launch_config.json"
+LAUNCHER_EXE_NAME = "SteamVR-Autostart-Launcher.exe"
+MANAGED_APP_METADATA_KEY = "steamvr_autostart_manager"
 DEFAULT_STEAM_PATHS = (
     r"C:\Program Files (x86)\Steam",
     r"C:\Program Files\Steam",
@@ -503,6 +508,10 @@ def app_data_dir() -> Path:
 
 def generated_manifest_root() -> Path:
     return app_data_dir() / "manifests"
+
+
+def launcher_log_path() -> Path:
+    return app_data_dir() / "launcher.log"
 
 
 def settings_path() -> Path:
@@ -985,6 +994,130 @@ def validate_app_key(app_key: str) -> None:
         raise SteamVRConfigError("App Key 只能包含英文字母、数字、点、下划线和短横线。")
 
 
+def is_filesystem_root(path: Path) -> bool:
+    try:
+        resolved = path.resolve()
+    except OSError:
+        resolved = path.absolute()
+    return bool(resolved.anchor) and resolved == Path(resolved.anchor)
+
+
+def normalized_working_directory(raw_value: str) -> str:
+    raw_value = raw_value.strip()
+    if not raw_value:
+        return ""
+
+    path = Path(raw_value)
+    if not path.exists() or not path.is_dir():
+        raise SteamVRConfigError(f"工作目录不存在或不是文件夹：{path}")
+
+    path = path.resolve()
+    return str(path)
+
+
+def steamvr_working_directory(raw_value: str) -> str:
+    path_value = normalized_working_directory(raw_value)
+    if not path_value:
+        return ""
+
+    path = Path(path_value)
+    if is_filesystem_root(path):
+        return ""
+    return path_value
+
+
+def suggested_working_directory(exe_path: Path) -> str:
+    parent = exe_path.parent
+    if is_filesystem_root(parent):
+        return ""
+    return str(parent)
+
+
+def append_launcher_log(message: str) -> None:
+    try:
+        path = launcher_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        with path.open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(f"[{timestamp}] {message}\n")
+    except OSError:
+        pass
+
+
+def build_target_command_line(target_path: Path, raw_arguments: str) -> str:
+    raw_arguments = raw_arguments.strip()
+    if target_path.suffix.lower() in {".bat", ".cmd"}:
+        comspec = os.environ.get("COMSPEC") or r"C:\Windows\System32\cmd.exe"
+        command = subprocess.list2cmdline([comspec, "/c", str(target_path)])
+    else:
+        command = subprocess.list2cmdline([str(target_path)])
+    if raw_arguments:
+        command = f"{command} {raw_arguments}"
+    return command
+
+
+def launch_target_from_config(config_path: Path) -> int:
+    try:
+        data = read_json_file(config_path, {})
+        if not isinstance(data, dict):
+            raise SteamVRConfigError(f"启动配置必须是 JSON 对象：{config_path}")
+
+        target_path = Path(str(data.get("target_path_windows") or data.get("target_path") or "")).expanduser()
+        if not target_path.exists():
+            raise SteamVRConfigError(f"目标程序不存在：{target_path}")
+
+        raw_arguments = str(data.get("arguments") or "")
+        working_directory = str(data.get("working_directory") or "").strip()
+        cwd = Path(working_directory).expanduser() if working_directory else target_path.parent
+        if cwd and (not cwd.exists() or not cwd.is_dir()):
+            raise SteamVRConfigError(f"工作目录不存在或不是文件夹：{cwd}")
+
+        command = build_target_command_line(target_path.resolve(), raw_arguments)
+        process = subprocess.Popen(command, cwd=str(cwd.resolve()) if cwd else None)
+        append_launcher_log(f"Launched pid={process.pid}: {command} cwd={cwd}")
+        return 0
+    except Exception as exc:  # The helper runs without a console, so a log file is the only reliable surface.
+        append_launcher_log(f"Launch failed from {config_path}: {exc}")
+        return 1
+
+
+def prepare_launcher_binary(manifest_dir: Path, config_path: Path) -> Tuple[str, str]:
+    manifest_dir.mkdir(parents=True, exist_ok=True)
+    if getattr(sys, "frozen", False):
+        source = Path(sys.executable).resolve()
+        launcher_path = manifest_dir / LAUNCHER_EXE_NAME
+        try:
+            source_stat = source.stat()
+            needs_copy = True
+            if launcher_path.exists():
+                launcher_stat = launcher_path.stat()
+                needs_copy = (
+                    source_stat.st_size != launcher_stat.st_size
+                    or int(source_stat.st_mtime) != int(launcher_stat.st_mtime)
+                )
+            if needs_copy:
+                shutil.copy2(source, launcher_path)
+        except OSError as exc:
+            raise SteamVRConfigError(f"准备启动代理失败：{launcher_path}\n{exc}") from exc
+        return LAUNCHER_EXE_NAME, subprocess.list2cmdline([LAUNCHER_ARGUMENT, str(config_path.resolve())])
+
+    script_path = Path(__file__).resolve()
+    return (
+        str(Path(sys.executable).resolve()),
+        subprocess.list2cmdline([str(script_path), LAUNCHER_ARGUMENT, str(config_path.resolve())]),
+    )
+
+
+def launcher_cli_exit_code(argv: List[str]) -> Optional[int]:
+    if LAUNCHER_ARGUMENT not in argv:
+        return None
+    index = argv.index(LAUNCHER_ARGUMENT)
+    if index + 1 >= len(argv):
+        append_launcher_log("Launch failed: missing launch config path.")
+        return 1
+    return launch_target_from_config(Path(argv[index + 1]))
+
+
 def localized_string(strings: Any, key: str, fallback: str = "") -> str:
     if not isinstance(strings, dict):
         return fallback
@@ -1267,6 +1400,11 @@ class SteamVRConfig:
             binary = str(app.get("binary_path_windows") or app.get("binary_path") or "")
             arguments = str(app.get("arguments") or "")
             working_directory = str(app.get("working_directory") or app.get("working_dir") or "")
+            manager_metadata = app.get(MANAGED_APP_METADATA_KEY)
+            if isinstance(manager_metadata, dict) and manager_metadata.get("target_path_windows"):
+                binary = str(manager_metadata.get("target_path_windows") or binary)
+                arguments = str(manager_metadata.get("target_arguments") or "")
+                working_directory = str(manager_metadata.get("target_working_directory") or "")
             autolaunch = self.get_autolaunch(app_key) if app_key else None
             entries.append(
                 AppEntry(
@@ -1316,6 +1454,99 @@ class SteamVRConfig:
             entries.extend(self.parse_manifest(manifest_path))
         return entries
 
+    def _configure_launcher_for_target(
+        self,
+        manifest_dir: Path,
+        exe_path: Path,
+        arguments: str,
+        working_directory: str,
+    ) -> Tuple[str, str, Dict[str, Any]]:
+        launch_config_path = manifest_dir / LAUNCH_CONFIG_NAME
+        write_json_file(
+            launch_config_path,
+            {
+                "target_path_windows": str(exe_path),
+                "arguments": arguments,
+                "working_directory": working_directory,
+            },
+        )
+        launcher_binary, launcher_arguments = prepare_launcher_binary(manifest_dir, launch_config_path)
+        metadata = {
+            "target_path_windows": str(exe_path),
+            "target_arguments": arguments,
+            "target_working_directory": working_directory,
+            "launcher_config": launch_config_path.name,
+        }
+        return launcher_binary, launcher_arguments, metadata
+
+    def _is_generated_manifest(self, manifest_path: Path) -> bool:
+        try:
+            manifest_path.resolve().relative_to(generated_manifest_root().resolve())
+            return True
+        except (OSError, ValueError):
+            return False
+
+    def upgrade_legacy_generated_manifest(self, manifest_path: Path) -> bool:
+        if not self._is_generated_manifest(manifest_path) or not manifest_path.exists():
+            return False
+
+        try:
+            data = read_json_file(manifest_path, {})
+        except SteamVRConfigError:
+            return False
+        if not isinstance(data, dict):
+            return False
+
+        changed = False
+        for app in ensure_list(data.get("applications")):
+            if not isinstance(app, dict) or app.get(MANAGED_APP_METADATA_KEY):
+                continue
+            app_key = str(app.get("app_key") or "")
+            if not app_key.lower().startswith("local.autostart."):
+                continue
+
+            binary_value = str(app.get("binary_path_windows") or app.get("binary_path") or "")
+            if not binary_value or Path(binary_value).name == LAUNCHER_EXE_NAME:
+                continue
+            target_path = Path(binary_value)
+            if not target_path.is_absolute():
+                target_path = manifest_path.parent / target_path
+            if not target_path.exists():
+                continue
+
+            arguments = str(app.get("arguments") or "").strip()
+            working_directory = str(app.get("working_directory") or app.get("working_dir") or "").strip()
+            if not working_directory:
+                working_directory = suggested_working_directory(target_path)
+            try:
+                target_working_directory = normalized_working_directory(working_directory)
+            except SteamVRConfigError:
+                target_working_directory = suggested_working_directory(target_path)
+
+            launcher_binary, launcher_arguments, metadata = self._configure_launcher_for_target(
+                manifest_path.parent,
+                target_path.resolve(),
+                arguments,
+                target_working_directory,
+            )
+            app["binary_path_windows"] = launcher_binary
+            app["arguments"] = launcher_arguments
+            app.pop("working_directory", None)
+            app.pop("working_dir", None)
+            app[MANAGED_APP_METADATA_KEY] = metadata
+            changed = True
+
+        if changed:
+            write_json_file(manifest_path, data)
+        return changed
+
+    def upgrade_legacy_generated_manifests(self) -> int:
+        upgraded = 0
+        for manifest_path in self.manifest_paths():
+            if self.upgrade_legacy_generated_manifest(manifest_path):
+                upgraded += 1
+        return upgraded
+
     def create_manifest_for_program(
         self,
         exe_path: Path,
@@ -1333,9 +1564,17 @@ class SteamVRConfig:
             raise SteamVRConfigError("请选择 Windows 可启动程序（.exe/.bat/.cmd/.com）。")
         display_name = display_name.strip() or exe_path.stem
         validate_app_key(app_key)
+        target_arguments = arguments.strip()
+        target_working_directory = normalized_working_directory(working_directory)
 
         manifest_dir = generated_manifest_root() / safe_app_key_part(app_key)
         manifest_path = manifest_dir / "app.vrmanifest"
+        launcher_binary, launcher_arguments, metadata = self._configure_launcher_for_target(
+            manifest_dir,
+            exe_path,
+            target_arguments,
+            target_working_directory,
+        )
         descriptions = {
             "zh_cn": "由 AlanBacker 制作的 SteamVR 自启动管理器注册。",
             "en_us": "Registered by AlanBacker's SteamVR Autostart Manager.",
@@ -1345,15 +1584,14 @@ class SteamVRConfig:
         app_data: Dict[str, Any] = {
             "app_key": app_key,
             "launch_type": "binary",
-            "binary_path_windows": str(exe_path),
-            "arguments": arguments.strip(),
+            "binary_path_windows": launcher_binary,
+            "arguments": launcher_arguments,
             "strings": {
                 locale: {"name": display_name, "description": description}
                 for locale, description in descriptions.items()
             },
+            MANAGED_APP_METADATA_KEY: metadata,
         }
-        if working_directory.strip():
-            app_data["working_directory"] = working_directory.strip()
         if dashboard_overlay:
             app_data["is_dashboard_overlay"] = True
 
@@ -1454,7 +1692,7 @@ class AddProgramDialog(tk.Toplevel):
         if not self.name_var.get().strip():
             self.name_var.set(exe_path.stem)
         if not self.cwd_var.get().strip():
-            self.cwd_var.set(str(exe_path.parent))
+            self.cwd_var.set(suggested_working_directory(exe_path))
         self._sync_app_key()
 
     def _browse_cwd(self) -> None:
@@ -1909,6 +2147,7 @@ class SteamVRManagerApp(tk.Tk):
             return
         try:
             self.config_model = SteamVRConfig(steam_path)
+            self.config_model.upgrade_legacy_generated_manifests()
             self.entries = self.config_model.all_entries()
             save_settings({"steam_path": str(steam_path)})
         except SteamVRConfigError as exc:
@@ -2184,6 +2423,10 @@ class SteamVRManagerApp(tk.Tk):
 
 
 def main() -> None:
+    launcher_exit_code = launcher_cli_exit_code(sys.argv[1:])
+    if launcher_exit_code is not None:
+        raise SystemExit(launcher_exit_code)
+
     app = SteamVRManagerApp()
     app.mainloop()
 

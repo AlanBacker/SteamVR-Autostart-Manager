@@ -1,5 +1,5 @@
 #define MyAppName "SteamVR Autostart Manager"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "AlanBacker"
 #define MyAppExeName "SteamVR-Autostart-Manager.exe"
 
