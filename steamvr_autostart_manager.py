@@ -20,13 +20,15 @@ except ImportError as exc:  # pragma: no cover - tkinter is part of normal Windo
     raise SystemExit("This tool needs tkinter. Please install the standard Windows Python build.") from exc
 
 if sys.platform == "win32":
+    import ctypes
     import winreg
 else:  # pragma: no cover - the target is Windows, but keeping imports safe helps tests on other hosts.
+    ctypes = None  # type: ignore[assignment]
     winreg = None  # type: ignore[assignment]
 
 
 APP_TITLE = "SteamVR 自启动管理器"
-VERSION = "v1.0.1"
+VERSION = "v1.0.2"
 APP_VENDOR_DIR = "SteamVRManifestManager"
 LAUNCHER_ARGUMENT = "--steamvr-autostart-launch"
 LAUNCH_CONFIG_NAME = "launch_config.json"
@@ -114,6 +116,7 @@ I18N = {
         "details": "详情",
         "select_app_hint": "选择一个应用查看详情。",
         "add_program": "添加程序",
+        "add_steam_url": "添加 Steam URL",
         "enable_autostart": "开启自启动",
         "disable_autostart": "关闭自启动",
         "remove_registration": "删除注册",
@@ -167,18 +170,21 @@ I18N = {
         "autostart_error": "异常",
         "detail_name": "名称：{value}",
         "detail_app_key": "App Key：{value}",
-        "detail_program": "程序：{value}",
+        "detail_program": "启动目标：{value}",
         "detail_args": "参数：{value}",
         "detail_cwd": "工作目录：{value}",
         "detail_manifest": "Manifest：{value}",
         "detail_autoconfig": "自启动配置：{value}",
         "detail_problem": "问题：{value}",
         "add_dialog_title": "添加自启动程序",
+        "add_url_dialog_title": "添加 Steam 游戏 URL",
         "program_path": "程序路径",
+        "steam_url": "Steam URL",
         "display_name": "显示名称",
         "launch_args": "启动参数",
         "working_directory": "工作目录",
         "overlay_check": "作为 SteamVR Dashboard Overlay 注册",
+        "run_as_admin_check": "以管理员身份启动",
         "autolaunch_check": "添加后立即开启自启动",
         "cancel": "取消",
         "add": "添加",
@@ -208,6 +214,7 @@ I18N = {
         "details": "Details",
         "select_app_hint": "Select an app to view details.",
         "add_program": "Add Program",
+        "add_steam_url": "Add Steam URL",
         "enable_autostart": "Enable Autostart",
         "disable_autostart": "Disable Autostart",
         "remove_registration": "Remove Registration",
@@ -261,18 +268,21 @@ I18N = {
         "autostart_error": "Issue",
         "detail_name": "Name: {value}",
         "detail_app_key": "App Key: {value}",
-        "detail_program": "Program: {value}",
+        "detail_program": "Launch target: {value}",
         "detail_args": "Arguments: {value}",
         "detail_cwd": "Working folder: {value}",
         "detail_manifest": "Manifest: {value}",
         "detail_autoconfig": "Autostart config: {value}",
         "detail_problem": "Problem: {value}",
         "add_dialog_title": "Add Autostart Program",
+        "add_url_dialog_title": "Add Steam Game URL",
         "program_path": "Program Path",
+        "steam_url": "Steam URL",
         "display_name": "Display Name",
         "launch_args": "Launch Arguments",
         "working_directory": "Working Folder",
         "overlay_check": "Register as a SteamVR Dashboard Overlay",
+        "run_as_admin_check": "Run as administrator",
         "autolaunch_check": "Enable autostart after adding",
         "cancel": "Cancel",
         "add": "Add",
@@ -302,6 +312,7 @@ I18N = {
         "details": "詳細",
         "select_app_hint": "アプリを選択すると詳細を表示します。",
         "add_program": "プログラムを追加",
+        "add_steam_url": "Steam URL を追加",
         "enable_autostart": "自動起動を有効化",
         "disable_autostart": "自動起動を無効化",
         "remove_registration": "登録を削除",
@@ -355,18 +366,21 @@ I18N = {
         "autostart_error": "異常",
         "detail_name": "名前：{value}",
         "detail_app_key": "App Key：{value}",
-        "detail_program": "プログラム：{value}",
+        "detail_program": "起動対象：{value}",
         "detail_args": "引数：{value}",
         "detail_cwd": "作業フォルダー：{value}",
         "detail_manifest": "Manifest：{value}",
         "detail_autoconfig": "自動起動設定：{value}",
         "detail_problem": "問題：{value}",
         "add_dialog_title": "自動起動プログラムを追加",
+        "add_url_dialog_title": "Steam ゲーム URL を追加",
         "program_path": "プログラムのパス",
+        "steam_url": "Steam URL",
         "display_name": "表示名",
         "launch_args": "起動引数",
         "working_directory": "作業フォルダー",
         "overlay_check": "SteamVR Dashboard Overlay として登録",
+        "run_as_admin_check": "管理者として起動",
         "autolaunch_check": "追加後に自動起動を有効化",
         "cancel": "キャンセル",
         "add": "追加",
@@ -396,6 +410,7 @@ I18N = {
         "details": "세부 정보",
         "select_app_hint": "앱을 선택하면 세부 정보를 볼 수 있습니다.",
         "add_program": "프로그램 추가",
+        "add_steam_url": "Steam URL 추가",
         "enable_autostart": "자동 시작 켜기",
         "disable_autostart": "자동 시작 끄기",
         "remove_registration": "등록 삭제",
@@ -449,18 +464,21 @@ I18N = {
         "autostart_error": "문제",
         "detail_name": "이름: {value}",
         "detail_app_key": "App Key: {value}",
-        "detail_program": "프로그램: {value}",
+        "detail_program": "시작 대상: {value}",
         "detail_args": "인수: {value}",
         "detail_cwd": "작업 폴더: {value}",
         "detail_manifest": "Manifest: {value}",
         "detail_autoconfig": "자동 시작 설정: {value}",
         "detail_problem": "문제: {value}",
         "add_dialog_title": "자동 시작 프로그램 추가",
+        "add_url_dialog_title": "Steam 게임 URL 추가",
         "program_path": "프로그램 경로",
+        "steam_url": "Steam URL",
         "display_name": "표시 이름",
         "launch_args": "시작 인수",
         "working_directory": "작업 폴더",
         "overlay_check": "SteamVR Dashboard Overlay로 등록",
+        "run_as_admin_check": "관리자 권한으로 실행",
         "autolaunch_check": "추가 후 자동 시작 켜기",
         "cancel": "취소",
         "add": "추가",
@@ -987,11 +1005,35 @@ def make_app_key(display_name: str, exe_path: Path) -> str:
     return f"local.autostart.{safe_app_key_part(display_name or exe_path.stem)}.{digest}"
 
 
+def make_url_app_key(display_name: str, launch_url: str) -> str:
+    app_id = steam_app_id_from_url(launch_url)
+    base = f"steam-{app_id}" if app_id else safe_app_key_part(display_name or "steam-url")
+    seed = f"{display_name}|{launch_url}".encode("utf-8", "ignore")
+    digest = hashlib.sha1(seed).hexdigest()[:8]
+    return f"local.steamurl.{safe_app_key_part(base)}.{digest}"
+
+
 def validate_app_key(app_key: str) -> None:
     if not app_key:
         raise SteamVRConfigError("App Key 不能为空。")
     if not re.fullmatch(r"[A-Za-z0-9._-]+", app_key):
         raise SteamVRConfigError("App Key 只能包含英文字母、数字、点、下划线和短横线。")
+
+
+def steam_app_id_from_url(launch_url: str) -> str:
+    match = re.search(r"^steam://(?:launch|rungameid|run)/(\d+)(?:[/?#].*)?$", launch_url.strip(), re.IGNORECASE)
+    return match.group(1) if match else ""
+
+
+def validate_steam_launch_url(launch_url: str) -> str:
+    launch_url = launch_url.strip()
+    if not launch_url:
+        raise SteamVRConfigError("Steam URL 不能为空。")
+    if not launch_url.lower().startswith("steam://"):
+        raise SteamVRConfigError("Steam URL 必须以 steam:// 开头。")
+    if any(char.isspace() for char in launch_url):
+        raise SteamVRConfigError("Steam URL 不能包含空格。")
+    return launch_url
 
 
 def is_filesystem_root(path: Path) -> bool:
@@ -1056,6 +1098,33 @@ def build_target_command_line(target_path: Path, raw_arguments: str) -> str:
     return command
 
 
+def shell_execute_target(target_path: Path, raw_arguments: str, cwd: Optional[Path], run_as_admin: bool) -> None:
+    if sys.platform != "win32" or ctypes is None:
+        raise SteamVRConfigError("当前系统不支持 ShellExecute 启动。")
+
+    raw_arguments = raw_arguments.strip()
+    if target_path.suffix.lower() in {".bat", ".cmd"}:
+        executable = os.environ.get("COMSPEC") or r"C:\Windows\System32\cmd.exe"
+        parameters = subprocess.list2cmdline(["/c", str(target_path)])
+        if raw_arguments:
+            parameters = f"{parameters} {raw_arguments}"
+    else:
+        executable = str(target_path)
+        parameters = raw_arguments
+
+    verb = "runas" if run_as_admin else "open"
+    result = ctypes.windll.shell32.ShellExecuteW(
+        None,
+        verb,
+        executable,
+        parameters or None,
+        str(cwd) if cwd else None,
+        1,
+    )
+    if result <= 32:
+        raise SteamVRConfigError(f"ShellExecute 启动失败，错误码：{result}")
+
+
 def launch_target_from_config(config_path: Path) -> int:
     try:
         data = read_json_file(config_path, {})
@@ -1072,9 +1141,20 @@ def launch_target_from_config(config_path: Path) -> int:
         if cwd and (not cwd.exists() or not cwd.is_dir()):
             raise SteamVRConfigError(f"工作目录不存在或不是文件夹：{cwd}")
 
+        run_as_admin = bool(data.get("run_as_admin"))
         command = build_target_command_line(target_path.resolve(), raw_arguments)
-        process = subprocess.Popen(command, cwd=str(cwd.resolve()) if cwd else None)
-        append_launcher_log(f"Launched pid={process.pid}: {command} cwd={cwd}")
+        try:
+            if run_as_admin:
+                shell_execute_target(target_path.resolve(), raw_arguments, cwd.resolve() if cwd else None, True)
+                append_launcher_log(f"Launched elevated: {command} cwd={cwd}")
+            else:
+                process = subprocess.Popen(command, cwd=str(cwd.resolve()) if cwd else None)
+                append_launcher_log(f"Launched pid={process.pid}: {command} cwd={cwd}")
+        except OSError as exc:
+            if getattr(exc, "winerror", None) != 740:
+                raise
+            shell_execute_target(target_path.resolve(), raw_arguments, cwd.resolve() if cwd else None, True)
+            append_launcher_log(f"Launched elevated after WinError 740: {command} cwd={cwd}")
         return 0
     except Exception as exc:  # The helper runs without a console, so a log file is the only reliable surface.
         append_launcher_log(f"Launch failed from {config_path}: {exc}")
@@ -1398,6 +1478,8 @@ class SteamVRConfig:
             description = localized_string(app.get("strings"), "description", "")
             launch_type = str(app.get("launch_type") or "")
             binary = str(app.get("binary_path_windows") or app.get("binary_path") or "")
+            if launch_type.lower() == "url":
+                binary = str(app.get("url") or binary)
             arguments = str(app.get("arguments") or "")
             working_directory = str(app.get("working_directory") or app.get("working_dir") or "")
             manager_metadata = app.get(MANAGED_APP_METADATA_KEY)
@@ -1460,6 +1542,7 @@ class SteamVRConfig:
         exe_path: Path,
         arguments: str,
         working_directory: str,
+        run_as_admin: bool,
     ) -> Tuple[str, str, Dict[str, Any]]:
         launch_config_path = manifest_dir / LAUNCH_CONFIG_NAME
         write_json_file(
@@ -1468,6 +1551,7 @@ class SteamVRConfig:
                 "target_path_windows": str(exe_path),
                 "arguments": arguments,
                 "working_directory": working_directory,
+                "run_as_admin": bool(run_as_admin),
             },
         )
         launcher_binary, launcher_arguments = prepare_launcher_binary(manifest_dir, launch_config_path)
@@ -1475,6 +1559,7 @@ class SteamVRConfig:
             "target_path_windows": str(exe_path),
             "target_arguments": arguments,
             "target_working_directory": working_directory,
+            "run_as_admin": bool(run_as_admin),
             "launcher_config": launch_config_path.name,
         }
         return launcher_binary, launcher_arguments, metadata
@@ -1528,6 +1613,7 @@ class SteamVRConfig:
                 target_path.resolve(),
                 arguments,
                 target_working_directory,
+                False,
             )
             app["binary_path_windows"] = launcher_binary
             app["arguments"] = launcher_arguments
@@ -1547,6 +1633,44 @@ class SteamVRConfig:
                 upgraded += 1
         return upgraded
 
+    def create_manifest_for_steam_url(
+        self,
+        launch_url: str,
+        display_name: str,
+        app_key: str,
+        dashboard_overlay: bool = False,
+        enable_autolaunch: bool = True,
+    ) -> Path:
+        launch_url = validate_steam_launch_url(launch_url)
+        display_name = display_name.strip() or steam_app_id_from_url(launch_url) or "Steam URL"
+        validate_app_key(app_key)
+
+        manifest_dir = generated_manifest_root() / safe_app_key_part(app_key)
+        manifest_path = manifest_dir / "app.vrmanifest"
+        descriptions = {
+            "zh_cn": "由 AlanBacker 制作的 SteamVR 自启动管理器注册。",
+            "en_us": "Registered by AlanBacker's SteamVR Autostart Manager.",
+            "ja_jp": "AlanBacker 製 SteamVR 自動起動マネージャーによって登録されました。",
+            "ko_kr": "AlanBacker가 만든 SteamVR 자동 시작 관리자가 등록했습니다.",
+        }
+        app_data: Dict[str, Any] = {
+            "app_key": app_key,
+            "launch_type": "url",
+            "url": launch_url,
+            "strings": {
+                locale: {"name": display_name, "description": description}
+                for locale, description in descriptions.items()
+            },
+        }
+        if dashboard_overlay:
+            app_data["is_dashboard_overlay"] = True
+
+        manifest = {"source": "builtin", "applications": [app_data]}
+        write_json_file(manifest_path, manifest)
+        self.add_manifest_path(manifest_path)
+        self.set_autolaunch(app_key, enable_autolaunch)
+        return manifest_path
+
     def create_manifest_for_program(
         self,
         exe_path: Path,
@@ -1556,6 +1680,7 @@ class SteamVRConfig:
         working_directory: str = "",
         dashboard_overlay: bool = True,
         enable_autolaunch: bool = True,
+        run_as_admin: bool = False,
     ) -> Path:
         exe_path = exe_path.resolve()
         if not exe_path.exists():
@@ -1574,6 +1699,7 @@ class SteamVRConfig:
             exe_path,
             target_arguments,
             target_working_directory,
+            run_as_admin,
         )
         descriptions = {
             "zh_cn": "由 AlanBacker 制作的 SteamVR 自启动管理器注册。",
@@ -1622,6 +1748,7 @@ class AddProgramDialog(tk.Toplevel):
         self.args_var = tk.StringVar()
         self.cwd_var = tk.StringVar()
         self.overlay_var = tk.BooleanVar(value=True)
+        self.run_as_admin_var = tk.BooleanVar(value=False)
         self.autolaunch_var = tk.BooleanVar(value=True)
 
         self._build()
@@ -1668,12 +1795,17 @@ class AddProgramDialog(tk.Toplevel):
         ).grid(row=5, column=1, sticky="w", pady=(12, 0), padx=(12, 8), columnspan=2)
         ttk.Checkbutton(
             outer,
+            text=self._t("run_as_admin_check"),
+            variable=self.run_as_admin_var,
+        ).grid(row=6, column=1, sticky="w", pady=(6, 0), padx=(12, 8), columnspan=2)
+        ttk.Checkbutton(
+            outer,
             text=self._t("autolaunch_check"),
             variable=self.autolaunch_var,
-        ).grid(row=6, column=1, sticky="w", pady=(6, 14), padx=(12, 8), columnspan=2)
+        ).grid(row=7, column=1, sticky="w", pady=(6, 14), padx=(12, 8), columnspan=2)
 
         button_row = ttk.Frame(outer, style="Surface.TFrame")
-        button_row.grid(row=7, column=0, columnspan=3, sticky="e", pady=(10, 0))
+        button_row.grid(row=8, column=0, columnspan=3, sticky="e", pady=(10, 0))
         ttk.Button(button_row, text=self._t("cancel"), command=self.destroy).grid(row=0, column=0, padx=(0, 10))
         ttk.Button(button_row, text=self._t("add"), command=self._submit, style="Accent.TButton").grid(row=0, column=1)
 
@@ -1725,6 +1857,113 @@ class AddProgramDialog(tk.Toplevel):
                 "app_key": app_key,
                 "arguments": self.args_var.get(),
                 "working_directory": self.cwd_var.get(),
+                "dashboard_overlay": self.overlay_var.get(),
+                "enable_autolaunch": self.autolaunch_var.get(),
+                "run_as_admin": self.run_as_admin_var.get(),
+            }
+        except SteamVRConfigError as exc:
+            messagebox.showerror(self._t("app_title"), str(exc), parent=self)
+            return
+        self.destroy()
+
+
+class AddSteamUrlDialog(tk.Toplevel):
+    def __init__(self, master: tk.Misc, config: SteamVRConfig, lang: str):
+        super().__init__(master)
+        self.config = config
+        self.lang = lang
+        self.result: Optional[Dict[str, Any]] = None
+        self.title(self._t("add_url_dialog_title"))
+        if hasattr(master, "_app_icon"):
+            self.iconphoto(False, getattr(master, "_app_icon"))
+        self.configure(bg=COLORS["bg"])
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+
+        self.url_var = tk.StringVar()
+        self.name_var = tk.StringVar()
+        self.app_key_var = tk.StringVar()
+        self.overlay_var = tk.BooleanVar(value=False)
+        self.autolaunch_var = tk.BooleanVar(value=True)
+
+        self._build()
+        self.bind("<Return>", lambda _event: self._submit())
+        self.bind("<Escape>", lambda _event: self.destroy())
+        self.url_entry.focus_set()
+
+    def _t(self, key: str, **kwargs: Any) -> str:
+        return tr(self.lang, key, **kwargs)
+
+    def _build(self) -> None:
+        outer = ttk.Frame(self, padding=18, style="Surface.TFrame")
+        outer.grid(row=0, column=0, sticky="nsew")
+        outer.columnconfigure(1, weight=1)
+
+        ttk.Label(outer, text=self._t("steam_url"), style="Field.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 8))
+        self.url_entry = ttk.Entry(outer, textvariable=self.url_var, width=62)
+        self.url_entry.grid(row=0, column=1, sticky="ew", pady=(0, 8), padx=(12, 8))
+        self.url_var.trace_add("write", self._sync_from_url)
+
+        ttk.Label(outer, text=self._t("display_name"), style="Field.TLabel").grid(row=1, column=0, sticky="w", pady=8)
+        ttk.Entry(outer, textvariable=self.name_var, width=62).grid(row=1, column=1, sticky="ew", pady=8, padx=(12, 8))
+        self.name_var.trace_add("write", self._sync_app_key)
+
+        ttk.Label(outer, text=self._t("app_key"), style="Field.TLabel").grid(row=2, column=0, sticky="w", pady=8)
+        ttk.Entry(outer, textvariable=self.app_key_var, width=62).grid(row=2, column=1, sticky="ew", pady=8, padx=(12, 8))
+
+        ttk.Checkbutton(
+            outer,
+            text=self._t("overlay_check"),
+            variable=self.overlay_var,
+        ).grid(row=3, column=1, sticky="w", pady=(12, 0), padx=(12, 8))
+        ttk.Checkbutton(
+            outer,
+            text=self._t("autolaunch_check"),
+            variable=self.autolaunch_var,
+        ).grid(row=4, column=1, sticky="w", pady=(6, 14), padx=(12, 8))
+
+        button_row = ttk.Frame(outer, style="Surface.TFrame")
+        button_row.grid(row=5, column=0, columnspan=2, sticky="e", pady=(10, 0))
+        ttk.Button(button_row, text=self._t("cancel"), command=self.destroy).grid(row=0, column=0, padx=(0, 10))
+        ttk.Button(button_row, text=self._t("add"), command=self._submit, style="Accent.TButton").grid(row=0, column=1)
+
+    def _sync_from_url(self, *_args: Any) -> None:
+        if getattr(self, "_editing_url", False):
+            return
+        launch_url = self.url_var.get().strip()
+        app_id = steam_app_id_from_url(launch_url)
+        if app_id and not self.name_var.get().strip():
+            self._editing_url = True
+            try:
+                self.name_var.set(f"Steam App {app_id}")
+            finally:
+                self._editing_url = False
+        self._sync_app_key()
+
+    def _sync_app_key(self, *_args: Any) -> None:
+        if getattr(self, "_editing_key", False):
+            return
+        launch_url = self.url_var.get().strip()
+        name = self.name_var.get().strip()
+        if not launch_url and not name:
+            return
+        self._editing_key = True
+        try:
+            self.app_key_var.set(make_url_app_key(name, launch_url or name))
+        finally:
+            self._editing_key = False
+
+    def _submit(self) -> None:
+        try:
+            launch_url = validate_steam_launch_url(self.url_var.get())
+            display_name = self.name_var.get().strip() or steam_app_id_from_url(launch_url) or "Steam URL"
+            app_key = self.app_key_var.get().strip()
+            validate_app_key(app_key)
+            self.result = {
+                "launch_url": launch_url,
+                "display_name": display_name,
+                "app_key": app_key,
                 "dashboard_overlay": self.overlay_var.get(),
                 "enable_autolaunch": self.autolaunch_var.get(),
             }
@@ -2116,12 +2355,13 @@ class SteamVRManagerApp(tk.Tk):
         actions.columnconfigure(0, weight=1)
         ttk.Label(actions, text=self._t("actions"), style="Section.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 12))
         ttk.Button(actions, text=self._t("add_program"), command=self._add_program, style="Accent.TButton").grid(row=1, column=0, sticky="ew", pady=(0, 9))
-        ttk.Button(actions, text=self._t("enable_autostart"), command=lambda: self._toggle_selected(True)).grid(row=2, column=0, sticky="ew", pady=(0, 9))
-        ttk.Button(actions, text=self._t("disable_autostart"), command=lambda: self._toggle_selected(False)).grid(row=3, column=0, sticky="ew", pady=(0, 9))
-        ttk.Button(actions, text=self._t("open_manifest"), command=self._open_manifest).grid(row=4, column=0, sticky="ew", pady=(0, 9))
-        ttk.Button(actions, text=self._t("open_config_dir"), command=self._open_config_dir).grid(row=5, column=0, sticky="ew", pady=(0, 9))
-        ttk.Button(actions, text=self._t("backup_manager"), command=self._backup_current_config).grid(row=6, column=0, sticky="ew", pady=(0, 9))
-        ttk.Button(actions, text=self._t("remove_registration"), command=self._remove_selected, style="Danger.TButton").grid(row=7, column=0, sticky="ew", pady=(18, 0))
+        ttk.Button(actions, text=self._t("add_steam_url"), command=self._add_steam_url).grid(row=2, column=0, sticky="ew", pady=(0, 9))
+        ttk.Button(actions, text=self._t("enable_autostart"), command=lambda: self._toggle_selected(True)).grid(row=3, column=0, sticky="ew", pady=(0, 9))
+        ttk.Button(actions, text=self._t("disable_autostart"), command=lambda: self._toggle_selected(False)).grid(row=4, column=0, sticky="ew", pady=(0, 9))
+        ttk.Button(actions, text=self._t("open_manifest"), command=self._open_manifest).grid(row=5, column=0, sticky="ew", pady=(0, 9))
+        ttk.Button(actions, text=self._t("open_config_dir"), command=self._open_config_dir).grid(row=6, column=0, sticky="ew", pady=(0, 9))
+        ttk.Button(actions, text=self._t("backup_manager"), command=self._backup_current_config).grid(row=7, column=0, sticky="ew", pady=(0, 9))
+        ttk.Button(actions, text=self._t("remove_registration"), command=self._remove_selected, style="Danger.TButton").grid(row=8, column=0, sticky="ew", pady=(18, 0))
 
         detail_frame = ttk.Frame(self, padding=(18, 14), style="Surface.TFrame")
         detail_frame.grid(row=3, column=0, sticky="ew", padx=18, pady=(0, 12))
@@ -2254,6 +2494,21 @@ class SteamVRManagerApp(tk.Tk):
             return
         try:
             manifest_path = self.config_model.create_manifest_for_program(**dialog.result)
+            self._load_from_path()
+            self._set_status(self._t("status_added", path=manifest_path))
+        except SteamVRConfigError as exc:
+            messagebox.showerror(self._t("app_title"), str(exc), parent=self)
+
+    def _add_steam_url(self) -> None:
+        if not self.config_model:
+            messagebox.showerror(self._t("app_title"), self._t("select_steam_first"), parent=self)
+            return
+        dialog = AddSteamUrlDialog(self, self.config_model, self.lang)
+        self.wait_window(dialog)
+        if not dialog.result:
+            return
+        try:
+            manifest_path = self.config_model.create_manifest_for_steam_url(**dialog.result)
             self._load_from_path()
             self._set_status(self._t("status_added", path=manifest_path))
         except SteamVRConfigError as exc:

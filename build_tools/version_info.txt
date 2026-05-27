@@ -1,8 +1,8 @@
 # UTF-8
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 1, 0),
-    prodvers=(1, 0, 1, 0),
+    filevers=(1, 0, 2, 0),
+    prodvers=(1, 0, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -17,12 +17,12 @@ VSVersionInfo(
         [
           StringStruct('CompanyName', 'AlanBacker'),
           StringStruct('FileDescription', 'SteamVR Autostart Manager'),
-          StringStruct('FileVersion', '1.0.1'),
+          StringStruct('FileVersion', '1.0.2'),
           StringStruct('InternalName', 'SteamVR-Autostart-Manager'),
           StringStruct('LegalCopyright', 'Copyright (C) 2026 AlanBacker'),
           StringStruct('OriginalFilename', 'SteamVR-Autostart-Manager.exe'),
           StringStruct('ProductName', 'SteamVR Autostart Manager'),
-          StringStruct('ProductVersion', '1.0.1')
+          StringStruct('ProductVersion', '1.0.2')
         ]
       )
     ]),
